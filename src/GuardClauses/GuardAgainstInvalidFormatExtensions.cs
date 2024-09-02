@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -83,7 +84,7 @@ public static partial class GuardClauseExtensions
         string parameterName,
         Func<T, Task<bool>> predicate,
         string? message = null,
-        Func<Exception>? exceptionCreator =  null)
+        Func<Exception>? exceptionCreator = null)
     {
         if (!await predicate(input))
         {
@@ -94,4 +95,35 @@ public static partial class GuardClauseExtensions
 
         return input;
     }
+#if NETCOREAPP2_0_OR_GREATER
+    /// <summary>
+    /// Throws an <see cref="ArgumentException" /> or a custom <see cref="Exception" /> if  <paramref name="input"/> doesn't satisfy the <paramref name="predicate"/> function.
+    /// </summary>
+    /// <param name="guardClause"></param>
+    /// <param name="input"></param>
+    /// <param name="parameterName"></param>
+    /// <param name="predicate"></param>
+    /// <param name="message">Optional. Custom error message</param>
+    /// <param name="exceptionCreator"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="Exception"></exception>
+    public static async Task<T> InvalidInputAsync<T>(this IGuardClause guardClause,
+        T input,
+        string parameterName,
+        Func<T, ValueTask<bool>> predicate,
+        string? message = null,
+        Func<Exception>? exceptionCreator = null)
+    {
+        if (!await predicate(input))
+        {
+            Exception? exception = exceptionCreator?.Invoke();
+
+            throw exception ?? new ArgumentException(message ?? $"Input {parameterName} did not satisfy the options", parameterName);
+        }
+
+        return input;
+    }
+#endif
 }
